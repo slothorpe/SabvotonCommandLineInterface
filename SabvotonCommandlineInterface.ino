@@ -2,10 +2,20 @@
  * Basis ModbusMaster Library
  * Holger Lesch, August 2019
  * holger.lesch@gmx.net
+ * 
+ * last Change: March 2020: oled-display for status registers
  */
 
 #include <ModbusMaster.h>
 #include <avr/pgmspace.h>
+
+#define OLED_DISPLAY
+#ifdef OLED_DISPLAY
+#include "U8glib.h"
+//U8GLIB_SH1106_128X64 u8g(U8G_I2C_OPT_NONE);  // I2C / TWI 
+U8GLIB_SH1106_128X64 u8g(U8G_I2C_OPT_NO_ACK);
+#endif
+
 
 // instantiate ModbusMaster object
 ModbusMaster node;
@@ -13,6 +23,36 @@ ModbusMaster node;
 #define BUF_LENGTH 128  /* Buffer for the incoming command. */
 static bool do_echo = true;
 static unsigned long lastMillis = 0;
+
+#define NUM_STAT_REG  26
+uint16_t data[NUM_STAT_REG] ={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+
+#ifdef OLED_DISPLAY
+void u8g_prepare(void) {
+  u8g.setFont(u8g_font_6x10);
+  u8g.setFontRefHeightExtendedText();
+  u8g.setDefaultForegroundColor();
+  u8g.setFontPosTop();
+}
+
+#define NUM_COLUMNS 5
+
+void draw(void) {
+   int z,i;
+   char buf[80];
+   u8g_prepare();
+   u8g.drawStr( 0, 0, "Sabvoton CL-Interface");
+   for (z=1;z<=NUM_COLUMNS;z++) {
+      for (i=0;i<NUM_STAT_REG/NUM_COLUMNS;i++) {
+        sprintf (buf,"%04x ",data[i+(z-1)*(NUM_STAT_REG/NUM_COLUMNS)]);
+         u8g.drawStr(i*26,10+(z-1)*11,buf);
+      }
+   }
+}
+#endif
+
+#define SINGLEFLOAT 54.6
+#define DOUBLEFLOAT 6553.0
  
 /* Ein Kommando ausführen */
 static void exec(char *cmdline)
@@ -59,7 +99,13 @@ static void exec(char *cmdline)
         if (result == node.ku8MBSuccess)
         {
           int r = node.getResponseBuffer(0);
-          sprintf(buf,"register %d: %d (0x%04x)",reg, r,r);
+          float rf = ((float)r)/SINGLEFLOAT;
+          int vk = (int) rf;
+          int nk = (int)((rf - ((float)vk)*SINGLEFLOAT)*100);
+          float rdf = ((float)r)/DOUBLEFLOAT;
+          int vdk = (int) rdf;
+          int ndk = (int)((rdf - ((float)vdk)*DOUBLEFLOAT)*100);
+          sprintf(buf,"register %d: %d (0x%04x %d.%d %d.%d)",reg, r,r,vk,nk,vdk, ndk);
           Serial.println(buf);
         } else {
           sprintf(buf,"read error: %02x", result);
@@ -81,7 +127,13 @@ static void exec(char *cmdline)
           if (result == node.ku8MBSuccess)
           {
             int r = node.getResponseBuffer(0);
-            sprintf(buf,"%04d: %d (0x%04x)",j,r,r);
+            float rf = ((float)r)/SINGLEFLOAT;
+            int vk = (int) rf;
+            int nk = (int)((rf - ((float)vk)*SINGLEFLOAT)*100);
+            float rdf = ((float)r)/DOUBLEFLOAT;
+            int vdk = (int) rdf;
+            int ndk = (int)((rdf - ((float)vdk)*DOUBLEFLOAT)*100);
+            sprintf(buf,"%04d: %d (0x%04x %d.%d %d.%d)",j,r,r,vk,nk,vdk,ndk);
             Serial.println(buf);
           } else {
             //sprintf(buf,"%04d: error",j);
@@ -175,12 +227,9 @@ void setup()
 }
 
 
-#define NUM_STAT_REG  26
-
 void loop()
 {
   uint8_t result;
-  uint16_t data[80];
   int j;
   static unsigned long lastMicros;
   
@@ -192,7 +241,7 @@ void loop()
     //Serial.println(result);
     if (result == node.ku8MBSuccess)
     {
-      for (j = 0; j < NUM_STAT_REG-1; j++)
+      for (j = 0; j < NUM_STAT_REG; j++)
       {
         data[j] = node.getResponseBuffer(j);
         //Serial.print(data[j]);
@@ -229,4 +278,12 @@ void loop()
             if (do_echo) Serial.write(data);
         }
     }
+
+#ifdef OLED_DISPLAY
+ // Display-Loop
+  u8g.firstPage();  
+  do {
+    draw();
+  } while( u8g.nextPage() );
+#endif
 }

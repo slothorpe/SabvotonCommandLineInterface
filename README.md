@@ -5,3 +5,7 @@ This is a sipmle arduino sketch providing a command line interface to the MQ Sab
 Also there is a screenshot showing the usage and a spreadsheet with the known registers of the Sabvoton.
 
 Please be carefull with writing in unknown registers, you might kill your controller !
+
+Last update:
+- minor bugfixes
+- added support for small OLED displays with U8GLIB to show the values of all status registers all 500ms
