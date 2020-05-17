@@ -16,6 +16,8 @@
 U8GLIB_SH1106_128X64 u8g(U8G_I2C_OPT_NO_ACK);
 #endif
 
+#define LED_PIN 13
+
 
 // instantiate ModbusMaster object
 ModbusMaster node;
@@ -188,7 +190,7 @@ void startseq()
   value = 13345;
  
   // slave: write TX buffer to (1) 16-bit registers starting at register 4039
-  digitalWrite(13,1);
+  digitalWrite(LED_PIN,1);
   result = node.writeSingleRegister(4039, value);
   Serial.print(result);
   delay(50);
@@ -197,7 +199,7 @@ void startseq()
   delay(50);
   result = node.writeSingleRegister(4039, value);
   Serial.println(result);
-  digitalWrite(13,0);
+  digitalWrite(LED_PIN,0);
   if (result != node.ku8MBSuccess) {
     Serial.println("couldn't send startseq, please connect to Sabvoto controller and restart/reset.");
     while (1);
@@ -206,8 +208,8 @@ void startseq()
 
 void setup()
 {
-  pinMode(13,OUTPUT);
-  digitalWrite(13,0);
+  pinMode(LED_PIN,OUTPUT);
+  digitalWrite(LED_PIN,0);
   // use Serial3 (port 3); initialize Modbus communication baud rate
   Serial3.begin(19200,SERIAL_8O1);
   Serial.begin(115200);
@@ -235,9 +237,9 @@ void loop()
   
   // Alle 500ms einmal die Statusregister ab 2748 lesen
   if (millis()>lastMillis+500) {
-    digitalWrite(13,1);
+    digitalWrite(LED_PIN,1);
     result = node.readHoldingRegisters(2748, NUM_STAT_REG);
-    digitalWrite(13,0);
+    digitalWrite(LED_PIN,0);
     //Serial.println(result);
     if (result == node.ku8MBSuccess)
     {
