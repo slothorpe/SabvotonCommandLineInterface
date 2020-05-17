@@ -219,7 +219,7 @@ void setup()
   Serial.println("Welcome to the SABVOTON command line interface");
   Serial.println("type help for help");
   Serial.println("");
-  Serial.println("Note: in the arduino serial monitor you have to end any commandline with a '.'");
+  Serial.println("Note: in the arduino serial monitor you have to end any commandline with a '.' or activate sending '\\n'");
   Serial.println("");
   Serial.println("PLEASE BE CAREFULL WITH WRITING INTO UNKNOWN REGISTER");
   Serial.println("");
